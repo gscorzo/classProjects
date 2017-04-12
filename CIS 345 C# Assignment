@@ -1,0 +1,224 @@
+//Giovanni Scorzo, CIS 345, A7, 10:30
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+
+
+namespace A7
+{
+    public delegate void StaffCreated(object sender, EventArgs e);
+    public delegate void StudentCreated(object sender, EventArgs e);
+
+    
+
+    public partial class DataEntry : Form
+    {
+        public event StaffCreated NewStaffCreated;
+        public event StudentCreated NewStudentCreated;
+
+        BindingList<Staff> staffList;
+        BindingList<Student> studentList;
+
+        public DataEntry()
+        {
+            InitializeComponent();
+        }
+
+        private void okButton_Click(object sender, EventArgs e)
+        {
+            if (!(studentRadioButton.Checked || staffRadioButton.Checked))
+            {
+                MessageBox.Show("Select Person Type");
+                return;
+            }
+     
+            // raise StudentCreated or StaffCreated event as appropriate
+            // also called fire, trigger, invoke
+            if (studentRadioButton.Checked && NewStudentCreated != null)
+            {
+                EventArgs tmpArgs = new EventArgs();
+                NewStudentCreated(this, tmpArgs);
+            }
+            else if (staffRadioButton.Checked && NewStaffCreated != null)
+            {
+                EventArgs tmpArgs2 = EventArgs.Empty;
+                NewStaffCreated(this, tmpArgs2);
+            }
+            
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            SetEventHandlers();
+
+            staffList = new BindingList<Staff>();
+            staffListBox.DataSource = staffList;
+
+            studentList = new BindingList<Student>();
+            studentListBox.DataSource = studentList;
+        }
+
+        private void SetEventHandlers()
+        {
+            
+            this.NewStaffCreated += new StaffCreated(this.DataEntry_StaffCreated);
+            this.NewStudentCreated += new StudentCreated(this.DataEntry_StudentCreated);
+        }
+
+        private void DataEntry_StaffCreated(object sender, EventArgs e)
+        {
+            Staff tmpStaff = new Staff(nameTextBox.Text, idTextBox.Text);
+        
+
+            staffList.Add(tmpStaff);
+        //    staffListBox.DataSource = staffList;
+            nameTextBox.Clear();
+            idTextBox.Clear();
+            nameTextBox.Focus();
+            staffRadioButton.Checked = false;
+
+            statusLabel.Text = $"New Staff Created! - {tmpStaff.StaffName}";
+            timer.Enabled = true;
+        }
+
+        private void DataEntry_StudentCreated(object sender, EventArgs e)
+        {
+            Student tmpStudent = new Student(nameTextBox.Text, idTextBox.Text);
+         //   studentList = new BindingList<Student>();
+
+            studentList.Add(tmpStudent);
+       //     studentListBox.DataSource = studentList;
+            nameTextBox.Clear();
+            idTextBox.Clear();
+            nameTextBox.Focus();
+            studentRadioButton.Checked = false;
+
+            statusLabel.Text = $"New Student Created! - {tmpStudent.StudentName}";
+            timer.Enabled = true;
+        }
+        
+        //open for student
+        private void openStudentsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                openFileDialogStudents.Filter = "App Data Files (*.dat)|*.dat|All Files (*.*)|*.*";
+                openFileDialogStudents.FilterIndex = 1;
+
+                DialogResult dialogResult = openFileDialogStudents.ShowDialog();
+
+                    if (dialogResult == DialogResult.OK)
+                    {
+                        string fileName = openFileDialogStudents.FileName;
+
+                        FileStream file = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                        BinaryFormatter bf = new BinaryFormatter();
+                        studentList = (BindingList<Student>)bf.Deserialize(file);
+                        studentListBox.DataSource = studentList;
+                        statusLabel.Text = "Student Loaded";
+                    }
+             }
+            catch (Exception)
+            {
+                statusLabel.Text = "Student Not Loaded";
+            }
+        }
+
+
+        //open for staff
+        private void openStaffToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                openFileDialogStaff.Filter = "App Data Files (*.dat)|*.dat|All Files (*.*)|*.*";
+                openFileDialogStaff.FilterIndex = 1;
+
+                DialogResult dialogResult = openFileDialogStaff.ShowDialog();
+
+                if (dialogResult == DialogResult.OK)
+                {
+                    string fileName = openFileDialogStaff.FileName;
+
+                    FileStream file = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                    BinaryFormatter bf = new BinaryFormatter();
+                    staffList = (BindingList<Staff>)bf.Deserialize(file);
+                    staffListBox.DataSource = staffList;
+                    statusLabel.Text = "Data loaded";
+                }
+
+            }
+            catch (Exception)
+            {
+
+                statusLabel.Text = "Data loading not successful";
+            }
+        }
+    
+
+        //save for student
+        private void saveStudentsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            saveFileDialogStudents.Filter = "App Data Files (*.dat)|*.dat|All Files (*.*)|*.*";
+            DialogResult dialogResult = saveFileDialogStudents.ShowDialog();
+            if (dialogResult == DialogResult.OK)
+            {
+                string fileName = saveFileDialogStudents.FileName;
+                try
+                {
+                    FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(file, studentList);
+                    file.Close();
+                    statusLabel.Text = "Student Saved.";
+
+                }
+                catch (Exception)
+                {
+
+                    statusLabel.Text = "Student Not Saved";
+                }
+
+            }
+        }
+
+        // save for staff
+        private void saveStaffToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            saveFileDialogStaff.Filter = "App Data Files (*.dat)|*.dat|All Files (*.*)|*.*";
+            DialogResult dialogResult = saveFileDialogStaff.ShowDialog();
+            if (dialogResult == DialogResult.OK)
+            {
+                string fileName = saveFileDialogStaff.FileName;
+                try
+                {
+                    FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(file, staffList);
+                    file.Close();
+                    statusLabel.Text = "File saved.";
+
+                }
+                catch (Exception)
+                {
+
+                    statusLabel.Text = "Save Not successful";
+                }
+
+            }
+        }
+
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            timer.Enabled = false;
+            statusLabel.Text = "Ready!";
+        }
+    }
+}
